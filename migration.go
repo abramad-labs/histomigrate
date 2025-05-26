@@ -54,6 +54,10 @@ type Migration struct {
 
 	// BytesRead holds the number of Bytes read from the migration source.
 	BytesRead int64
+
+	// UpKindMigration indicates the direction of the migration.
+	// true for "up" (applying/forward), false for "down" (rolling back/reverse).
+	UpKindMigration bool
 }
 
 // NewMigration returns a new Migration and sets the body, identifier,

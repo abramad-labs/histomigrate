@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"io"
 	nurl "net/url"
-	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -21,12 +20,6 @@ import (
 	"github.com/hashicorp/go-multierror"
 	"github.com/lib/pq"
 )
-
-func init() {
-	db := Postgres{}
-	database.Register("postgres", &db)
-	database.Register("postgresql", &db)
-}
 
 var (
 	multiStmtDelimiter = []byte(";")
@@ -62,72 +55,6 @@ type Postgres struct {
 
 	// Open and WithInstance need to guarantee that config is never nil
 	config *Config
-}
-
-func WithConnection(ctx context.Context, conn *sql.Conn, config *Config) (*Postgres, error) {
-	if config == nil {
-		return nil, ErrNilConfig
-	}
-
-	if err := conn.PingContext(ctx); err != nil {
-		return nil, err
-	}
-
-	if config.DatabaseName == "" {
-		query := `SELECT CURRENT_DATABASE()`
-		var databaseName string
-		if err := conn.QueryRowContext(ctx, query).Scan(&databaseName); err != nil {
-			return nil, &database.Error{OrigErr: err, Query: []byte(query)}
-		}
-
-		if len(databaseName) == 0 {
-			return nil, ErrNoDatabaseName
-		}
-
-		config.DatabaseName = databaseName
-	}
-
-	if config.SchemaName == "" {
-		query := `SELECT CURRENT_SCHEMA()`
-		var schemaName sql.NullString
-		if err := conn.QueryRowContext(ctx, query).Scan(&schemaName); err != nil {
-			return nil, &database.Error{OrigErr: err, Query: []byte(query)}
-		}
-
-		if !schemaName.Valid {
-			return nil, ErrNoSchema
-		}
-
-		config.SchemaName = schemaName.String
-	}
-
-	if len(config.MigrationsTable) == 0 {
-		config.MigrationsTable = DefaultMigrationsTable
-	}
-
-	config.migrationsSchemaName = config.SchemaName
-	config.migrationsTableName = config.MigrationsTable
-	if config.MigrationsTableQuoted {
-		re := regexp.MustCompile(`"(.*?)"`)
-		result := re.FindAllStringSubmatch(config.MigrationsTable, -1)
-		config.migrationsTableName = result[len(result)-1][1]
-		if len(result) == 2 {
-			config.migrationsSchemaName = result[0][1]
-		} else if len(result) > 2 {
-			return nil, fmt.Errorf("\"%s\" MigrationsTable contains too many dot characters", config.MigrationsTable)
-		}
-	}
-
-	px := &Postgres{
-		conn:   conn,
-		config: config,
-	}
-
-	if err := px.ensureVersionTable(); err != nil {
-		return nil, err
-	}
-
-	return px, nil
 }
 
 func WithInstance(instance *sql.DB, config *Config) (database.Driver, error) {
