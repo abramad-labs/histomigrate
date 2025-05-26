@@ -3,5 +3,5 @@
 package cli
 
 import (
-	_ "github.com/golang-migrate/migrate/v4/database/sqlserver"
+	_ "github.com/abramad-labs/histomigrate/database/sqlserver"
 )

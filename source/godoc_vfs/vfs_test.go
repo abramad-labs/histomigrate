@@ -3,8 +3,8 @@ package godoc_vfs_test
 import (
 	"testing"
 
-	"github.com/golang-migrate/migrate/v4/source/godoc_vfs"
-	st "github.com/golang-migrate/migrate/v4/source/testing"
+	"github.com/abramad-labs/histomigrate/source/godoc_vfs"
+	st "github.com/abramad-labs/histomigrate/source/testing"
 	"golang.org/x/tools/godoc/vfs/mapfs"
 )
 

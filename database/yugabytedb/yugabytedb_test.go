@@ -11,15 +11,15 @@ import (
 	"testing"
 	"time"
 
+	"github.com/abramad-labs/histomigrate"
 	"github.com/dhui/dktest"
-	"github.com/golang-migrate/migrate/v4"
 
 	_ "github.com/lib/pq"
 
-	dt "github.com/golang-migrate/migrate/v4/database/testing"
-	"github.com/golang-migrate/migrate/v4/dktesting"
+	dt "github.com/abramad-labs/histomigrate/database/testing"
+	"github.com/abramad-labs/histomigrate/dktesting"
 
-	_ "github.com/golang-migrate/migrate/v4/source/file"
+	_ "github.com/abramad-labs/histomigrate/source/file"
 )
 
 const defaultPort = 5433

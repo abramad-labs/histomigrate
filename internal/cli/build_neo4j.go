@@ -3,5 +3,5 @@
 package cli
 
 import (
-	_ "github.com/golang-migrate/migrate/v4/database/neo4j"
+	_ "github.com/abramad-labs/histomigrate/database/neo4j"
 )
