@@ -15,9 +15,9 @@ import (
 
 	"go.uber.org/atomic"
 
-	"github.com/golang-migrate/migrate/v4"
-	"github.com/golang-migrate/migrate/v4/database"
-	"github.com/golang-migrate/migrate/v4/database/multistmt"
+	"github.com/abramad-labs/histomigrate"
+	"github.com/abramad-labs/histomigrate/database"
+	"github.com/abramad-labs/histomigrate/database/multistmt"
 	"github.com/hashicorp/go-multierror"
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5/pgconn"

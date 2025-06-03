@@ -15,13 +15,13 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/abramad-labs/histomigrate"
+	"github.com/abramad-labs/histomigrate/database"
 	"github.com/dhui/dktest"
-	"github.com/golang-migrate/migrate/v4"
-	"github.com/golang-migrate/migrate/v4/database"
 
-	dt "github.com/golang-migrate/migrate/v4/database/testing"
-	"github.com/golang-migrate/migrate/v4/dktesting"
-	_ "github.com/golang-migrate/migrate/v4/source/file"
+	dt "github.com/abramad-labs/histomigrate/database/testing"
+	"github.com/abramad-labs/histomigrate/dktesting"
+	_ "github.com/abramad-labs/histomigrate/source/file"
 )
 
 const (

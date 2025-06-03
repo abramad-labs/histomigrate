@@ -13,9 +13,9 @@ import (
 
 	"github.com/hashicorp/go-multierror"
 
-	"github.com/golang-migrate/migrate/v4/database"
-	iurl "github.com/golang-migrate/migrate/v4/internal/url"
-	"github.com/golang-migrate/migrate/v4/source"
+	"github.com/abramad-labs/histomigrate/database"
+	iurl "github.com/abramad-labs/histomigrate/internal/url"
+	"github.com/abramad-labs/histomigrate/source"
 )
 
 // DefaultPrefetchMigrations sets the number of migrations to pre-read
@@ -242,21 +242,46 @@ func (m *Migrate) Steps(n int) error {
 		return err
 	}
 
-	curVersion, dirty, err := m.databaseDrv.Version()
-	if err != nil {
-		return m.unlockErr(err)
-	}
-
-	if dirty {
-		return m.unlockErr(ErrDirty{curVersion})
-	}
-
 	ret := make(chan interface{}, m.PrefetchMigrations)
 
-	if n > 0 {
-		go m.readUp(curVersion, n, ret)
+	ed, isExtended := m.databaseDrv.(database.ExtendedDriver)
+	if isExtended {
+		dirtyMigr, isDirty, err := ed.IsDatabaseDirty()
+		if err != nil {
+			return m.unlockErr(err)
+		}
+
+		if isDirty {
+			return m.unlockErr(ErrDirty{
+				dirtyMigr,
+			})
+		}
+
+		appliedMigrations, err := ed.GetAllAppliedMigrations()
+		if err != nil {
+			return m.unlockErr(err)
+		}
+
+		if n > 0 {
+			go m.queueUpMigrations(appliedMigrations, n, ret)
+		} else {
+			go m.queueDownMigrations(appliedMigrations, -n, ret)
+		}
 	} else {
-		go m.readDown(curVersion, -n, ret)
+		curVersion, dirty, err := m.databaseDrv.Version()
+		if err != nil {
+			return m.unlockErr(err)
+		}
+
+		if dirty {
+			return m.unlockErr(ErrDirty{curVersion})
+		}
+
+		if n > 0 {
+			go m.readUp(curVersion, n, ret)
+		} else {
+			go m.readDown(curVersion, -n, ret)
+		}
 	}
 
 	return m.unlockErr(m.runMigrations(ret))
@@ -269,18 +294,29 @@ func (m *Migrate) Up() error {
 		return err
 	}
 
-	curVersion, dirty, err := m.databaseDrv.Version()
-	if err != nil {
-		return m.unlockErr(err)
-	}
-
-	if dirty {
-		return m.unlockErr(ErrDirty{curVersion})
-	}
-
 	ret := make(chan interface{}, m.PrefetchMigrations)
 
-	go m.readUp(curVersion, -1, ret)
+	ed, isExtended := m.databaseDrv.(database.ExtendedDriver)
+	if isExtended {
+		appliedMigrations, err := ed.GetAllAppliedMigrations()
+		if err != nil {
+			return m.unlockErr(err)
+		}
+
+		go m.queueUpMigrations(appliedMigrations, -1, ret)
+	} else {
+		curVersion, dirty, err := m.databaseDrv.Version()
+		if err != nil {
+			return m.unlockErr(err)
+		}
+
+		if dirty {
+			return m.unlockErr(ErrDirty{curVersion})
+		}
+
+		go m.readUp(curVersion, -1, ret)
+	}
+
 	return m.unlockErr(m.runMigrations(ret))
 }
 
@@ -291,17 +327,29 @@ func (m *Migrate) Down() error {
 		return err
 	}
 
-	curVersion, dirty, err := m.databaseDrv.Version()
-	if err != nil {
-		return m.unlockErr(err)
-	}
-
-	if dirty {
-		return m.unlockErr(ErrDirty{curVersion})
-	}
-
 	ret := make(chan interface{}, m.PrefetchMigrations)
-	go m.readDown(curVersion, -1, ret)
+
+	ed, isExtended := m.databaseDrv.(database.ExtendedDriver)
+	if isExtended {
+		appliedMigrations, err := ed.GetAllAppliedMigrations()
+		if err != nil {
+			return m.unlockErr(err)
+		}
+
+		go m.queueDownMigrations(appliedMigrations, -1, ret)
+	} else {
+		curVersion, dirty, err := m.databaseDrv.Version()
+		if err != nil {
+			return m.unlockErr(err)
+		}
+
+		if dirty {
+			return m.unlockErr(ErrDirty{curVersion})
+		}
+
+		go m.readDown(curVersion, -1, ret)
+	}
+
 	return m.unlockErr(m.runMigrations(ret))
 }
 
@@ -371,6 +419,16 @@ func (m *Migrate) Force(version int) error {
 
 	if err := m.lock(); err != nil {
 		return err
+	}
+
+	ed, isExtended := m.databaseDrv.(database.ExtendedDriver)
+	if isExtended {
+		err := ed.RemoveMigration(suint(version))
+		if err != nil {
+			return m.unlockErr(err)
+		}
+
+		return m.unlock()
 	}
 
 	if err := m.databaseDrv.SetVersion(version, false); err != nil {
@@ -724,52 +782,24 @@ func (m *Migrate) readDown(from int, limit int, ret chan<- interface{}) {
 // GracefulStop channel.
 func (m *Migrate) runMigrations(ret <-chan interface{}) error {
 	for r := range ret {
-
 		if m.stop() {
 			return nil
 		}
 
-		switch r := r.(type) {
+		switch val := r.(type) {
 		case error:
-			return r
+			return val
 
 		case *Migration:
-			migr := r
-
-			// set version with dirty state
-			if err := m.databaseDrv.SetVersion(migr.TargetVersion, true); err != nil {
-				return err
-			}
-
-			if migr.Body != nil {
-				m.logVerbosePrintf("Read and execute %v\n", migr.LogString())
-				if err := m.databaseDrv.Run(migr.BufferedBody); err != nil {
-					return err
-				}
-			}
-
-			// set clean state
-			if err := m.databaseDrv.SetVersion(migr.TargetVersion, false); err != nil {
-				return err
-			}
-
-			endTime := time.Now()
-			readTime := migr.FinishedReading.Sub(migr.StartedBuffering)
-			runTime := endTime.Sub(migr.FinishedReading)
-
-			// log either verbose or normal
-			if m.Log != nil {
-				if m.Log.Verbose() {
-					m.logPrintf("Finished %v (read %v, ran %v)\n", migr.LogString(), readTime, runTime)
-				} else {
-					m.logPrintf("%v (%v)\n", migr.LogString(), readTime+runTime)
-				}
+			if err := m.handleSingleMigration(val); err != nil {
+				return err // Error during migration execution
 			}
 
 		default:
-			return fmt.Errorf("unknown type: %T with value: %+v", r, r)
+			return fmt.Errorf("runMigrations: received unknown type: %T with value: %+v", val, val)
 		}
 	}
+
 	return nil
 }
 

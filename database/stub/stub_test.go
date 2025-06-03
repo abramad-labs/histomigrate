@@ -1,12 +1,12 @@
 package stub
 
 import (
-	"github.com/golang-migrate/migrate/v4"
-	"github.com/golang-migrate/migrate/v4/source"
-	"github.com/golang-migrate/migrate/v4/source/stub"
+	"github.com/abramad-labs/histomigrate"
+	"github.com/abramad-labs/histomigrate/source"
+	"github.com/abramad-labs/histomigrate/source/stub"
 	"testing"
 
-	dt "github.com/golang-migrate/migrate/v4/database/testing"
+	dt "github.com/abramad-labs/histomigrate/database/testing"
 )
 
 func Test(t *testing.T) {

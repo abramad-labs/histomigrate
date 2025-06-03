@@ -10,9 +10,9 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/golang-migrate/migrate/v4"
-	"github.com/golang-migrate/migrate/v4/database"
-	"github.com/golang-migrate/migrate/v4/source"
+	"github.com/abramad-labs/histomigrate"
+	"github.com/abramad-labs/histomigrate/database"
+	"github.com/abramad-labs/histomigrate/source"
 )
 
 const (
@@ -246,6 +246,74 @@ Database drivers: `+strings.Join(database.List(), ", ")+"\n", createUsage, gotoU
 		}
 
 		if err := upCmd(migrater, limit); err != nil {
+			log.fatalErr(err)
+		}
+
+		if log.verbose {
+			log.Println("Finished after", time.Since(startTime))
+		}
+
+	case "do":
+		doSet, helpPtr := newFlagSetWithHelp("do")
+
+		if err := doSet.Parse(args); err != nil {
+			log.fatalErr(err)
+		}
+
+		handleSubCmdHelp(*helpPtr, forceUsage, doSet)
+
+		if migraterErr != nil {
+			log.fatalErr(migraterErr)
+		}
+
+		if doSet.NArg() == 0 {
+			log.fatal("error: please specify version argument V")
+		}
+
+		v, err := strconv.ParseInt(doSet.Arg(0), 10, 64)
+		if err != nil {
+			log.fatal("error: can't read version argument V")
+		}
+
+		if v < -1 {
+			log.fatal("error: argument V must be >= -1")
+		}
+
+		if err := doMigrationCmd(migrater, uint(v)); err != nil {
+			log.fatalErr(err)
+		}
+
+		if log.verbose {
+			log.Println("Finished after", time.Since(startTime))
+		}
+
+	case "undo":
+		undoSet, helpPtr := newFlagSetWithHelp("undo")
+
+		if err := undoSet.Parse(args); err != nil {
+			log.fatalErr(err)
+		}
+
+		handleSubCmdHelp(*helpPtr, forceUsage, undoSet)
+
+		if migraterErr != nil {
+			log.fatalErr(migraterErr)
+		}
+
+		if undoSet.NArg() == 0 {
+			log.fatal("error: please specify version argument V")
+		}
+
+		v, err := strconv.ParseInt(undoSet.Arg(0), 10, 64)
+		if err != nil {
+			log.fatal("error: can't read version argument V")
+		}
+
+		if v < -1 {
+			log.fatal("error: argument V must be >= -1")
+		}
+
+		if err := undoMigrationCmd(migrater, uint(v)); err != nil {
 			log.fatalErr(err)
 		}
 

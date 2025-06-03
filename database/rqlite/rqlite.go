@@ -9,8 +9,8 @@ import (
 
 	"go.uber.org/atomic"
 
-	"github.com/golang-migrate/migrate/v4"
-	"github.com/golang-migrate/migrate/v4/database"
+	"github.com/abramad-labs/histomigrate"
+	"github.com/abramad-labs/histomigrate/database"
 	"github.com/hashicorp/go-multierror"
 	"github.com/rqlite/gorqlite"
 )

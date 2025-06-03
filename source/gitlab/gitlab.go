@@ -10,7 +10,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/golang-migrate/migrate/v4/source"
+	"github.com/abramad-labs/histomigrate/source"
 	"github.com/xanzy/go-gitlab"
 )
 
