@@ -40,6 +40,9 @@ jobs:
           sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 
           sudo systemctl restart docker || sudo service docker restart
+          docker version
+          docker compose version
+          docker buildx version
 
       - uses: actions/setup-go@v5
         with:
