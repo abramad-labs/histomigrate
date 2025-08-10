@@ -113,6 +113,7 @@ func (m *Migrate) queueUpMigrations(appliedMigrs []int, limit int, ret chan<- in
 			continue
 		}
 
+		appliedCount++
 		migr, err := m.newMigration(targetVersion, int(targetVersion))
 		if err != nil {
 			ret <- err
@@ -138,8 +139,6 @@ func (m *Migrate) queueUpMigrations(appliedMigrs []int, limit int, ret chan<- in
 			ret <- err
 			return
 		}
-
-		appliedCount++
 	}
 
 	if appliedCount == 0 {
@@ -212,6 +211,7 @@ func (m *Migrate) queueDownMigrations(appliedMigrs []int, limit int, ret chan<- 
 			targetVersion = appliedMigrs[i+1]
 		}
 
+		appliedCount++
 		migr, err := m.newMigration(version, targetVersion)
 		if err != nil {
 			ret <- err
@@ -225,8 +225,6 @@ func (m *Migrate) queueDownMigrations(appliedMigrs []int, limit int, ret chan<- 
 				m.logErr(err)
 			}
 		}(migr)
-
-		appliedCount++
 	}
 
 	if appliedCount == 0 {
