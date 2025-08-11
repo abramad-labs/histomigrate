@@ -1,5 +1,7 @@
 SOURCE ?= file go_bindata github github_ee bitbucket aws_s3 google_cloud_storage godoc_vfs gitlab
+SOURCE_EXTENDED ?= file
 DATABASE ?= postgres mysql redshift cassandra spanner cockroachdb yugabytedb clickhouse mongodb sqlserver firebird neo4j pgx pgx5 rqlite
+DATABASE_EXTENDED ?= postgres_extended
 DATABASE_TEST ?= $(DATABASE) sqlite sqlite3 sqlcipher
 VERSION ?= $(shell git describe --tags 2>/dev/null | cut -c 2-)
 TEST_FLAGS ?=
@@ -44,6 +46,17 @@ test-with-flags:
 	@echo DATABASE_TEST: $(DATABASE_TEST)
 
 	@go test $(TEST_FLAGS) ./...
+
+test-extended-features:
+	@-rm -r $(COVERAGE_DIR)
+	@mkdir $(COVERAGE_DIR)
+	make test-with-flags-extended-features TEST_FLAGS='-v -race -covermode atomic -coverprofile $$(COVERAGE_DIR)/combined.txt -bench=. -benchmem -timeout 60m'
+
+test-with-flags-extended-features:
+	@echo SOURCE: $(SOURCE_EXTENDED)
+	@echo DATABASE_TEST: $(DATABASE_EXTENDED)
+
+	@CGO_ENABLED=1 go test $(TEST_FLAGS) ./testing_migrate_extended/
 
 
 kill-orphaned-docker-containers:

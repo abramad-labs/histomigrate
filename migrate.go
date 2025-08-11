@@ -298,6 +298,17 @@ func (m *Migrate) Up() error {
 
 	ed, isExtended := m.databaseDrv.(database.ExtendedDriver)
 	if isExtended {
+		dirtyMigr, isDirty, err := ed.IsDatabaseDirty()
+		if err != nil {
+			return m.unlockErr(err)
+		}
+
+		if isDirty {
+			return m.unlockErr(ErrDirty{
+				dirtyMigr,
+			})
+		}
+
 		appliedMigrations, err := ed.GetAllAppliedMigrations()
 		if err != nil {
 			return m.unlockErr(err)
@@ -331,6 +342,17 @@ func (m *Migrate) Down() error {
 
 	ed, isExtended := m.databaseDrv.(database.ExtendedDriver)
 	if isExtended {
+		dirtyMigr, isDirty, err := ed.IsDatabaseDirty()
+		if err != nil {
+			return m.unlockErr(err)
+		}
+
+		if isDirty {
+			return m.unlockErr(ErrDirty{
+				dirtyMigr,
+			})
+		}
+
 		appliedMigrations, err := ed.GetAllAppliedMigrations()
 		if err != nil {
 			return m.unlockErr(err)

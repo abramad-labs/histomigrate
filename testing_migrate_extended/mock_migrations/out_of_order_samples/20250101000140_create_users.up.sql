@@ -1,0 +1,4 @@
+CREATE TABLE users(
+    id BIGSERIAL PRIMARY KEY,
+    user_ref BIGINT NOT NULL
+);
