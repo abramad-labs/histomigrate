@@ -12,9 +12,9 @@ import (
 )
 
 const (
-	healthyMigrationSamplesDir       = "./mock_migrations/healthy_samples/"
-	corruptedMigrationSamplesDir     = "./mock_migrations/corrupted_samples/"
-	outOfOrderMigrationSamplesDir    = "./mock_migrations/out_of_order_samples/"
+	healthyMigrationSamplesDir       = "./migration_samples/healthy_samples/"
+	corruptedMigrationSamplesDir     = "./migration_samples/corrupted_samples/"
+	outOfOrderMigrationSamplesDir    = "./migration_samples/out_of_order_samples/"
 	expectedCorruptedMigrationTS     = 20250101000135
 	expectedMigrationFileContentUp   = "ALTER TABLE orders ADD COLUMN created_at TIMESTAMPTZ NOT NULL DEFAULT NOW();"
 	expectedMigrationFileContentDown = "ALTER TABLE orders DROP COLUMN created_at;"
